@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>4D nonograms</title>
+</head>
+<body>
+	<button id="playBtn">Start Game</button>
+
+<script>
+  document.getElementById("playBtn").addEventListener("click", () => {
+    const nums = [10, 10, 3, 8];
+    sessionStorage.setItem("dims", JSON.stringify(nums));
+    window.location.href = "playArea.html";
+  });
+</script>
+</body>
+</html>
