@@ -180,8 +180,11 @@ function updateBoard(r, c, color) {
 
 	if (sameNSquares == 1) {
 		if (NonogramModule.isSolved()) {
-			window.alert("You solved it!");
-			console.log("Yeih!")
+			setTimeout(() => {
+			  alert('You did it!');
+			  console.log("Yeih!")
+			}, 100);
+				
 		}
 	}
 }
