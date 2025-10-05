@@ -250,7 +250,7 @@ function buildBoard(place, x, y, data) {
 		} else {
 			console.log("Portrait")
 			const numberSize = 5;
-			const blocksize = 8;
+			const blocksize = 6;
 
 		    container.style.width = blocksize * dims[dimsUsed[0]] + numberSize + "dvw";
 		    container.style.height = blocksize * dims[dimsUsed[1]] + numberSize + "dvw";
