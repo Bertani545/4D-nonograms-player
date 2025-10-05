@@ -238,24 +238,26 @@ function buildBoard(place, x, y, data) {
 		const container = document.getElementsByClassName('game-container')[0];
 		if (window.innerWidth > window.innerHeight) {
 		    const numberSize = 5;
+		    const blocksize = 6;
 
-		    container.style.height = 8 * dims[dimsUsed[1]] + numberSize + "dvh";
-		    container.style.width = 8 * dims[dimsUsed[0]] + numberSize + "dvh";
+		    container.style.height = blocksize * dims[dimsUsed[1]] + numberSize + "dvh";
+		    container.style.width = blocksize * dims[dimsUsed[0]] + numberSize + "dvh";
 		    
 
-		    container.style.gridTemplateRows = numberSize  * Math.ceil(dims[dimsUsed[1]]/2) + "dvh " + 8 * dims[dimsUsed[1]] + "dvh";
-			container.style.gridTemplateColumns = numberSize  * Math.ceil(dims[dimsUsed[0]]/2) + "dvh " + 8 * dims[dimsUsed[0]] + "dvh";
+		    container.style.gridTemplateRows = numberSize  * Math.ceil(dims[dimsUsed[1]]/2) + "dvh " + blocksize * dims[dimsUsed[1]] + "dvh";
+			container.style.gridTemplateColumns = numberSize  * Math.ceil(dims[dimsUsed[0]]/2) + "dvh " + blocksize * dims[dimsUsed[0]] + "dvh";
 
 		} else {
 			console.log("Portrait")
 			const numberSize = 5;
+			const blocksize = 8;
 
-		    container.style.width = 8 * dims[dimsUsed[0]] + numberSize + "dvw";
-		    container.style.height = 8 * dims[dimsUsed[1]] + numberSize + "dvw";
+		    container.style.width = blocksize * dims[dimsUsed[0]] + numberSize + "dvw";
+		    container.style.height = blocksize * dims[dimsUsed[1]] + numberSize + "dvw";
 		    
 
-		    container.style.gridTemplateRows =  numberSize  * Math.ceil(dims[dimsUsed[1]]/2)  + "dvw " + 8 * dims[dimsUsed[1]] + "dvw";
-			container.style.gridTemplateColumns = numberSize  * Math.ceil(dims[dimsUsed[0]]/2) + "dvw " + 8 * dims[dimsUsed[0]] + "dvw";
+		    container.style.gridTemplateRows =  numberSize  * Math.ceil(dims[dimsUsed[1]]/2)  + "dvw " + blocksize * dims[dimsUsed[1]] + "dvw";
+			container.style.gridTemplateColumns = numberSize  * Math.ceil(dims[dimsUsed[0]]/2) + "dvw " + blocksize * dims[dimsUsed[0]] + "dvw";
 		}
 	}
 
