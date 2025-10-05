@@ -61,8 +61,37 @@
 }
 
 
+.red-cross {
+  --cross-color: #e00;       /* red color */
+  --cross-thickness: 3px;    /* line thickness */
+  --cross-length: 80%;       /* how long the lines are relative to element */
+  position: relative;
+}
+
+/* Two pseudo-elements that form the X */
+.red-cross::before,
+.red-cross::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--cross-length);
+  height: var(--cross-thickness);
+  background: var(--cross-color);
+  transform-origin: center center;
+  pointer-events: none; /* don't block clicks */
+  /*translate: -50% -50%;*/
+  opacity: 1;
+  z-index: 2;
+}
+
+/* the two diagonal rotations */
+.red-cross::before { transform: translate(-50%, -50%) rotate(45deg); }
+.red-cross::after  { transform: translate(-50%, -50%) rotate(-45deg); }
+
+
 .solved {
-	color: lightgreen;
+	opacity: 0.4;
 }
 
 .cell {

@@ -98,7 +98,8 @@ function buildGrid(container, x, y, data) {
 				btn.dataset.state = 1;
 			}
 			if (data[i][j] == 0) {
-				btn.style.backgroundColor = 'red';
+				btn.classList.add('red-cross');
+				btn.style.backgroundColor = 'white';
 				btn.dataset.state = 0;
 			}
 
@@ -118,6 +119,7 @@ function buildGrid(container, x, y, data) {
 
 
 function handleLeftClick(self, r, c) {
+	self.classList.remove('red-cross');
 	if (self.dataset.state != 1) {
 		self.style.backgroundColor = 'black'
 		self.dataset.state = 1;
@@ -133,12 +135,14 @@ function handleLeftClick(self, r, c) {
 
 function handleRightClick(self, r, c, status) {
 	if (self.dataset.state != 0) {
-		self.style.backgroundColor = 'red';
+		self.style.backgroundColor = 'white';
+		self.classList.add('red-cross');
 		self.dataset.state = 0;
 		updateBoard(r,c, 0);
 
 	} else {
 		self.style.backgroundColor = 'white';
+		self.classList.remove('red-cross');
 		self.dataset.state = -1;
 		updateBoard(r,c, -1);
 	}
@@ -211,11 +215,13 @@ function handleTap(self, r, c) {
 		updateBoard(r,c, 1);
 
 	} else if (self.dataset.state == 1) {
-		self.style.backgroundColor = 'red';
+		self.style.backgroundColor = 'white';
+		self.classList.add('red-cross');
 		self.dataset.state = 0;
 		updateBoard(r,c, 0);
 	} else {
 		self.style.backgroundColor = 'white';
+		self.classList.remove('red-cross');
 		self.dataset.state = -1;
 		updateBoard(r,c, -1);
 	}
