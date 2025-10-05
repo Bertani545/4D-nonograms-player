@@ -6,14 +6,49 @@
 	<title>4D nonograms</title>
 </head>
 <body>
-	<button id="playBtn">Start Game</button>
+  <label for="x">X:</label>
+  <select id="x"></select>
 
-<script>
-  document.getElementById("playBtn").addEventListener("click", () => {
-    const nums = [10, 10, 3, 8];
-    sessionStorage.setItem("dims", JSON.stringify(nums));
-    window.location.href = "playArea.html";
-  });
-</script>
+  <label for="y">Y:</label>
+  <select id="y"></select>
+
+  <label for="z">Z:</label>
+  <select id="z"></select>
+
+  <label for="w">W:</label>
+  <select id="w"></select>
+
+  <br><br>
+  <button id="playBtn">Start Game</button>
+
+  <script>
+    function populateSelect(id, min, max) {
+      const sel = document.getElementById(id);
+      for (let i = min; i <= max; i++) {
+        const opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = i;
+        sel.appendChild(opt);
+      }
+      sel.value = min; // start at smallest
+    }
+
+    // Populate dropdowns
+    populateSelect("x", 2, 10);
+    populateSelect("y", 2, 10);
+    populateSelect("z", 0, 10);
+    populateSelect("w", 0, 10);
+
+    document.getElementById("playBtn").addEventListener("click", () => {
+      const nums = [
+        parseInt(document.getElementById("x").value, 10),
+        parseInt(document.getElementById("y").value, 10),
+        parseInt(document.getElementById("z").value, 10),
+        parseInt(document.getElementById("w").value, 10)
+      ];
+      sessionStorage.setItem("dims", JSON.stringify(nums));
+      window.location.href = "playArea.html";
+    });
+  </script>
 </body>
 </html>

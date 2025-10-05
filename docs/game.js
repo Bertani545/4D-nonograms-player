@@ -16,6 +16,10 @@ const data = [0,0,1,1,1,0,0,1,1,1,
 
 let NonogramModule;
 let boardData;
+let dimSizes;
+let dimsUsed;
+let dims;
+let currIdx;
 
 function makeNumbersTop(element, nDivs, nNumbers) {
 	for (let i = 0; i < nDivs; i++) {
@@ -64,35 +68,50 @@ function makeNumbersLeft(element, nDivs, nNumbers) {
 
 }
 
-function buildGrid(container, x, y) {
+function buildGrid(container, x, y, data) {
 	for (let i = 0; i < x; i++) {
 		for (let j = 0; j < y; j++) {
 			const btn = document.createElement("button");
 			btn.className = "cell"
 			btn.dataset.state = -1; // start at -1
-			btn.addEventListener("mousedown", e => {
-			  if (e.button === 0) {
-				    handleLeftClick(btn, j, i);
-			  } else if (e.button === 2) {
-			    	handleRightClick(btn, j, i);
-			  } 
-			});
+			btn.addEventListener('pointerdown', (e) => {
+				if (e.pointerType === 'touch') {
+					handleTap(btn, j, i);
+				} else if (e.pointerType === "mouse") {
+					if (e.button === 0) {
+						handleLeftClick(btn, j, i);
+					} else if (e.button === 2) {
+						handleRightClick(btn, j, i);
+					} 
+				} else{
+					return;
+				}
 
-			btn.addEventListener("touchend", e => {
-			  handleTap(btn, i, j);
-			});
+			})
+
 
 			btn.addEventListener("contextmenu", e => {
 			  e.preventDefault();
 			});
+			if (data[i][j] == 1){
+				btn.style.backgroundColor = 'black';
+				btn.dataset.state = 1;
+			}
+			if (data[i][j] == 0) {
+				btn.style.backgroundColor = 'red';
+				btn.dataset.state = 0;
+			}
 
-			let w = 100 / y;
-			let h = 100 / x;
-			btn.style.width = w + "%";
-			btn.style.height = h + "%";
+			//let w = 100 * 10 / y;
+			//let h = 100 * 10 / x;
+			//btn.style.width = w + "%";
+			//btn.style.height = h + "%";
 			container.appendChild(btn);
 		}
-		container.appendChild(document.createElement("br"));
+		
+		container.style.gridTemplateColumns = "repeat(" + y + ", 1fr)";
+		container.style.gridTemplateRows = "repeat(" + x + ", 1fr)";
+
 	}
 }
 
@@ -125,57 +144,53 @@ function handleRightClick(self, r, c, status) {
 	}
 }
 
-// r and c are known dimensions
-const dimsUsed = [[0,"left"], [1,"top"]];
+//dimsUsed
+//currIdx
 function updateBoard(r, c, color) {
-	let idx = new NonogramModule.VectorInt();
-	idx.push_back(r);
-	idx.push_back(c);
-	// Push back the others
-	const sameNSquares = NonogramModule.paintCell(idx, color);
+	
+	currIdx.set(dimsUsed[0], r);
+	currIdx.set(dimsUsed[1], c);
+
+	const sameNSquares = NonogramModule.paintCell(currIdx, color);
 	
 
 	// Get lines
 	// set the others
-	for (let dim of dimsUsed) {
-  		const ans = NonogramModule.getHintsStatus(dim[0], idx);
-
-  		const isMod = ans[0];
-  		const status = vectorToArray(ans[1]);
-
-  		console.log(status)
-  		let numbers;
-  		if (dim[1] == "left") {
-  			numbers = boardData.NumbersLeft.children[c];
-  			if (isMod == 1) {
-  				numbers.classList.remove('unmod');
-  				numbers.classList.add('modifiable');
-  			} else {
-  				numbers.classList.add('unmod');
-  				numbers.classList.remove('modifiable');
-  			}
-  		}else {
-  			numbers = boardData.NumbersTop.children[r];
-  			if (isMod == 1) {
-  				numbers.classList.remove('unmod');
-  				numbers.classList.add('modifiable');
-  			} else {
-  				numbers.classList.add('unmod');
-  				numbers.classList.remove('modifiable');
-  			}
-  		}
-
-  		let i = 0;
-  		for (let num of numbers.children) {
-  			if (num.innerHTML == "") continue;
-  			if (status[i] == 1) {
-  				num.classList.add('solved');
-  			} else {
-  				num.classList.remove('solved');
-  			}
-  			i++;
-  		}
-  		
+	for (let d = 0; d < 2; d++) {
+		const dim = dimsUsed[d];
+		const ans = NonogramModule.getHintsStatus(dim, currIdx);
+		const isMod = ans[0];
+		const status = vectorToArray(ans[1]);
+		let numbers;
+		if (d == 0) {
+			numbers = boardData.NumbersLeft.children[c];
+			if (isMod == 1) {
+				numbers.classList.remove('unmod');
+				numbers.classList.add('modifiable');
+			} else {
+				numbers.classList.add('unmod');
+				numbers.classList.remove('modifiable');
+			}
+		}else {
+			numbers = boardData.NumbersTop.children[r];
+			if (isMod == 1) {
+				numbers.classList.remove('unmod');
+				numbers.classList.add('modifiable');
+			} else {
+				numbers.classList.add('unmod');
+				numbers.classList.remove('modifiable');
+			}
+		}
+		let i = 0;
+		for (let num of numbers.children) {
+			if (num.innerHTML == "") continue;
+			if (status[i] == 1) {
+				num.classList.add('solved');
+			} else {
+				num.classList.remove('solved');
+			}
+			i++;
+		}
 	}
 
 	if (sameNSquares == 1) {
@@ -190,14 +205,61 @@ function updateBoard(r, c, color) {
 }
 
 function handleTap(self, r, c) {
+	if (self.dataset.state == -1) {
+		self.style.backgroundColor = 'black';
+		self.dataset.state = 1;
+		updateBoard(r,c, 1);
 
+	} else if (self.dataset.state == 1) {
+		self.style.backgroundColor = 'red';
+		self.dataset.state = 0;
+		updateBoard(r,c, 0);
+	} else {
+		self.style.backgroundColor = 'white';
+		self.dataset.state = -1;
+		updateBoard(r,c, -1);
+	}
 }
 
 
-function buildBoard(place, x, y, Module) {
+function buildBoard(place, x, y, data) {
 	const container =  document.createElement("div");
 	container.className = "game-container";
+
+
+
+	function checkOrientation() {
+		const container = document.getElementsByClassName('game-container')[0];
+		if (window.innerWidth > window.innerHeight) {
+		    const numberSize = 15;
+
+		    container.style.height = 8 * dims[dimsUsed[1]] + numberSize + "dvh";
+		    container.style.width = 8 * dims[dimsUsed[0]] + numberSize + "dvh";
+		    
+
+		    container.style.gridTemplateRows = numberSize + "dvh " + 8 * dims[dimsUsed[1]] + "dvh";
+			container.style.gridTemplateColumns = numberSize + "dvh " + 8 * dims[dimsUsed[0]] + "dvh";
+
+		} else {
+			console.log("Portrait")
+			const numberSize = 15;
+
+		    container.style.width = 8 * dims[dimsUsed[0]] + numberSize + "dvw";
+		    container.style.height = 8 * dims[dimsUsed[1]] + numberSize + "dvw";
+		    
+
+		    container.style.gridTemplateRows = numberSize + "dvw " + 8 * dims[dimsUsed[1]] + "dvw";
+			container.style.gridTemplateColumns = numberSize + "dvw " + 8 * dims[dimsUsed[0]] + "dvw";
+		}
+	}
+
+
+	// Detect changes on resize
+	window.addEventListener('resize', checkOrientation);
+	
+
 	place.appendChild(container);
+	checkOrientation();
 
 	const numbersTop = document.createElement("div");
 	numbersTop.className = "top-numbers";
@@ -211,8 +273,7 @@ function buildBoard(place, x, y, Module) {
 
 	const board = document.createElement("div");
 	board.className = "board";
-	buildGrid(board, x, y);
-
+	buildGrid(board, y, x, data);
 	container.appendChild(numbersTop);
 	container.appendChild(numbersLeft);
 	container.appendChild(board);
@@ -227,7 +288,6 @@ function buildBoard(place, x, y, Module) {
 
 
 function placeNumbersLine(line, numbers) {
-
 	const blocks = line.children;
 	let i = 0;
 	let j = blocks.length - 1;
@@ -240,78 +300,141 @@ function placeNumbersLine(line, numbers) {
 }
 
 
-function placeNumbers(section, numbersGroup) {
-	const n = numbersGroup.length;
+function placeNumbers(section, solveDim, movingDim, idx) {
+
 	const sectionChildren = section.children;
-	
-	if (n != sectionChildren.length) return;
-	for (let i = 0; i < n; i++) {
-		placeNumbersLine(sectionChildren[i], numbersGroup[i])
+
+	for (let i = 0; i < section.children.length; i++) {
+		idx.set(movingDim, i);
+		const linehints = NonogramModule.getHint(solveDim, idx);
+		placeNumbersLine(sectionChildren[i], vectorToArray(linehints));
 	}
+
+	
 }
+
+
 
 
 function main() {
 
-	const dims = JSON.parse(sessionStorage.getItem("dims"));
-
+	dims = JSON.parse(sessionStorage.getItem("dims"));
+	if (dims == undefined) {
+		window.location.href = "index.html";
+	}
+	dims = dims.filter((x) => {return x >= 2})
+	console.log(dims)
+	if(dims.length < 2) {
+		console.log("Wrong input")
+		return;
+		
+	}
 	let dimsC = new NonogramModule.VectorInt();
-	dimsC.push_back(dims[0]);
-	dimsC.push_back(dims[1]);
+
+	for (let e of dims) {
+		dimsC.push_back(e);
+	}
 	NonogramModule.createNonogram(dimsC);
 
 	const boardArea = document.getElementById("playArea");
-  	boardData = buildBoard(boardArea, dims[0], dims[1]);
-  	
-  	// Get the hitns
-  	let nTop = vectorVectorToArrayArray(NonogramModule.getHints(1));
-  	let nLeft = vectorVectorToArrayArray(NonogramModule.getHints(0));
-  	console.log(nTop)
-  	placeNumbers(boardData.NumbersTop, nTop);
-  	placeNumbers(boardData.NumbersLeft, nLeft);
+	
 
-  	for (let i = 0; i < nLeft.length; i++) {
-  		let temp = new NonogramModule.VectorInt();
-		temp.push_back(0);
-		temp.push_back(i);
-  		const ans = NonogramModule.getHintsStatus(0, temp);
+	const changeButton = document.getElementById("change-play-area");
+	changeButton.addEventListener("click", (e) => {
+		const bestBoard = NonogramModule.getBestBoard();
+		console.log(bestBoard)
+		const def = bestBoard[0];
+		const idx = def[1];
+		const boardDims = def[0];
+		const data = vectorVectorToArrayArray(bestBoard[1]);
 
-  		const isMod = ans[0];
-  		const status = vectorToArray(ans[1]);
+		dimsUsed = def[0];
+		currIdx = def[1];
 
-  		console.log(status)
+		// Build it
+		boardArea.innerHTML = "";
+		console.log("New fetched")
+		boardData = buildBoard(boardArea, dims[boardDims[0]], dims[boardDims[1]], data);
+		//console.log("Built")
+		//console.log(boardData);
 
-  		if (isMod == 1) {
-  			boardData.NumbersLeft.children[i].classList.remove('unmod');
-  			boardData.NumbersLeft.children[i].classList.add('modifiable');
-  		} else {
-  			boardData.NumbersLeft.children[i].classList.add('unmod');
-  			boardData.NumbersLeft.children[i].classList.remove('modifiable');
-  		}
-  	}
+		// Build hints
+		placeNumbers(boardData.NumbersTop, boardDims[1], boardDims[0], idx);
+		placeNumbers(boardData.NumbersLeft, boardDims[0], boardDims[1], idx);
+		//console.log("Placed hints")
 
-  	for (let i = 0; i < nTop.length; i++) {
-  		let temp = new NonogramModule.VectorInt();
-		temp.push_back(i);
-		temp.push_back(0);
-  		const ans = NonogramModule.getHintsStatus(1, temp);
+		for (let i = 0; i < boardData.NumbersLeft.children.length; i++) {
+				let temp = new NonogramModule.VectorInt();
 
-  		const isMod = ans[0];
-  		const status = vectorToArray(ans[1]);
+				for (let d = 0; d < dimsC.size(); d++) {
+					if (d == boardDims[0]) temp.push_back(0); // Random
+					else if (d == boardDims[1]) temp.push_back(i);
+					else temp.push_back(idx.get(d));
 
-  		console.log(isMod)
+				}
 
-  		if (isMod == 1) {
-  			boardData.NumbersTop.children[i].classList.remove('unmod');
-  			boardData.NumbersTop.children[i].classList.add('modifiable');
-  		} else {
-  			boardData.NumbersTop.children[i].classList.add('unmod');
-  			boardData.NumbersTop.children[i].classList.remove('modifiable');
-  		}
-  	}
+				const ans = NonogramModule.getHintsStatus(boardDims[0], temp); // 0
 
+				const isMod = ans[0];
+				const status = vectorToArray(ans[1]);
 
-  	console.log(":)")
+				//console.log(status)
+
+				if (isMod == 1) {
+					boardData.NumbersLeft.children[i].classList.remove('unmod');
+					boardData.NumbersLeft.children[i].classList.add('modifiable');
+				} else {
+					boardData.NumbersLeft.children[i].classList.add('unmod');
+					boardData.NumbersLeft.children[i].classList.remove('modifiable');
+				}
+				let j = 0;
+				for (let num of boardData.NumbersLeft.children[i].children) {
+					if (num.innerHTML == "") continue;
+					if (status[j] == 1) {
+						num.classList.add('solved');
+					} else {
+						num.classList.remove('solved');
+					}
+					j++;
+				}
+			}
+
+			for (let i = 0; i < boardData.NumbersTop.children.length; i++) {
+				let temp = new NonogramModule.VectorInt();
+				for (let d = 0; d < dimsC.size(); d++) {
+					if (d == boardDims[1]) temp.push_back(0); // Random
+					else if (d == boardDims[0]) temp.push_back(i);
+					else temp.push_back(idx.get(d));
+				}
+				const ans = NonogramModule.getHintsStatus(boardDims[1], temp);
+
+				const isMod = ans[0];
+				const status = vectorToArray(ans[1]);
+
+				//console.log(isMod)
+
+				if (isMod == 1) {
+					boardData.NumbersTop.children[i].classList.remove('unmod');
+					boardData.NumbersTop.children[i].classList.add('modifiable');
+				} else {
+					boardData.NumbersTop.children[i].classList.add('unmod');
+					boardData.NumbersTop.children[i].classList.remove('modifiable');
+				}
+
+				let j = 0;
+				for (let num of boardData.NumbersTop.children[i].children) {
+					if (num.innerHTML == "") continue;
+					if (status[j] == 1) {
+						num.classList.add('solved');
+					} else {
+						num.classList.remove('solved');
+					}
+					j++;
+				}
+			}
+	});
+	changeButton.click();
+	//console.log(":)")
 }	
 
 
@@ -331,12 +454,14 @@ function vectorVectorToArrayArray(vecvec) {
 	let arrVec = vectorToArray(vecvec);
 	let arr = [];
     for (let i = 0; i < arrVec.length; i++) {
-    	arr.push(vectorToArray(arrVec[i]));
+  	arr.push(vectorToArray(arrVec[i]));
     }
     return arr;
 }
 
 // We have to change the board size according to the number of swuares
+
+
 
 
 createModule().then((Module) => {

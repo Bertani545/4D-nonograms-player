@@ -14,23 +14,10 @@
 #include<map>
 
 
+#include"dataDef.hpp"
+#include"updatablePriorityQueue.hpp"
+
 using namespace std;
-
-struct  LineDef {
-	int dim;
-	vector<int> idx;
-};
-
-enum class Color {
-	Undefined = -1,
-	White = 0,
-	Black = 1,
-};
-
-enum class HintState {
-	unsolved = 0,
-	solved = 1
-};
 
 
 class Nonogram
@@ -54,8 +41,11 @@ private:
 	vector<Color> unsolvedData;
 	vector<int> strides;
 	vector<vector<int>> hintStrides;
+
 	int total_squares = 0;
 	int painted_squares = 0;
+	UpdatablePriorityQueue recomendationMap;
+	vector<int> dimsSolvability;
 
 	// For dimensions: x, y, z, ...
 	void buildStrides() {
@@ -345,7 +335,7 @@ private:
 		writeLine(def, newLine);
 	}
 
-	float getHeuristic(struct LineDef& def) {
+	float getHeuristic(struct LineDef& def, bool modifiable) {
 		vector<Color> line = this->getLine(def, false);
 		vector<int> lineHints = this->getHintLine(def);
 
@@ -360,7 +350,11 @@ private:
 			if (e == Color::Undefined) continue;
 			he += ((float) e )/ ((float) this->dimensionsSize[def.dim]);
 		}
-		return he;
+
+		// Up in the stack if it can be modified
+		float mod = modifiable * 2 - 1;
+
+		return he + mod;
 	}
 
 	vector<vector<int>> generateLineIndexTuples(int dim) {
@@ -388,21 +382,6 @@ private:
 		return tuples;
 	}
 
-	//using Item = std::pair<float, std::pair<int, std::vector<int>>>;
-	using Item = std::pair<float, struct LineDef>;
-	// We know a.second.second and b.second.second are equal in size but must differ somewhere
-	struct Compare {
-		bool operator()(const Item& a, const Item& b) const {
-			if (a.first != b.first)
-				return a.first < b.first; // bigger priority value = higher priority
-			if (a.second.dim != b.second.dim)
-				return a.second.dim < b.second.dim;
-			int i = 0;
-			while (a.second.idx[i] == b.second.idx[i]) i++;
-			return a.second.idx[i] < b.second.idx[i];
-		}
-	};
-
 	// Will try to solve the nonogram from the lists
 	// if impossible or it does not equal the original data, returns false
 	// else, it saves the data (if it didn't exists) and returns true
@@ -413,7 +392,7 @@ private:
 		this->unsolvedData = vector<Color>(totalMult, Color::Undefined);
 
 		//priority_queue<Item, std::vector<Item>, Compare> nextAnalyze;
-		set<Item, Compare> nextAnalyze; // To allow updates
+		UpdatablePriorityQueue nextAnalyze;
 
 		// Create all the possible lines
 		// Solve the obvious ones
@@ -427,9 +406,10 @@ private:
 				if (isTrivial(def)) {
 					this->solveTrivial(def);
 				} else {
-					float heuristic = this->getHeuristic(def);
-					Item toSolve = {heuristic, {dim, coords}};
-					nextAnalyze.insert(toSolve);
+					struct LineDef linedef = {dim, coords};
+					bool mody = this->lineCanBeModified(linedef);
+					float heuristic = this->getHeuristic(def, mody);
+					nextAnalyze.insertOrUpdate(heuristic, mody, {dim, coords});
 				}
 			}
 		}
@@ -442,13 +422,12 @@ private:
 		
 		while (!nextAnalyze.empty()) {
 			modifiedEntries.clear();
-			const auto& top = *nextAnalyze.begin(); // Maybe
-			auto [priority, inner] = top;
-			struct LineDef old_line = inner;
-			nextAnalyze.erase(nextAnalyze.begin());
+			const auto& top = nextAnalyze.top(); // Maybe
+			auto [old_line,  priority, _] = top;
+			nextAnalyze.pop();
 
-
- 			
+ 			// we do not use the solvability for this one because we chnage various
+ 			// entries at the same time. We let that data for user input and update
 			bool solvedAnything = lineSolver(old_line, modifiedEntries);
 			if (!solvedAnything) continue;
 			//this->printSolved();
@@ -462,22 +441,10 @@ private:
 				for (int d2 = 0; d2 < numberDimensions; d2++) {
 					if (d2 == old_line.dim) continue;
 					struct LineDef newLine = {d2, coords};
-					float heuristic = this->getHeuristic(newLine);
-					Item toSolve = {heuristic, {d2, coords}};
+					bool isSolvable = this->lineCanBeModified(newLine);
+					float heuristic = this->getHeuristic(newLine, isSolvable);
 
-					// Chek for update
-					auto it = std::find_if(nextAnalyze.begin(), nextAnalyze.end(), [&toSolve](const Item& x){
-						return x.second.dim == toSolve.second.dim &&
-								x.second.idx == toSolve.second.idx;
-					});
-
-					if (it != nextAnalyze.end()) {
-						nextAnalyze.erase(it);
-						nextAnalyze.insert(toSolve);
-					} else {
-						nextAnalyze.insert(toSolve);
-					}
-
+					nextAnalyze.insertOrUpdate(heuristic, isSolvable, {d2, coords});
 					
 				}
 			}
@@ -560,22 +527,22 @@ private:
 	bool checkCellConsistency(int currIdx) {
 
 		 // Decode currIdx into coordinates
-	    vector<int> coords(this->numberDimensions);
-	    for (int d = this->numberDimensions - 1; d >= 0; --d) {
-	        coords[d] = currIdx / this->strides[d];
-	        currIdx %= this->strides[d];
-	    }
+		vector<int> coords(this->numberDimensions);
+		for (int d = this->numberDimensions - 1; d >= 0; --d) {
+			coords[d] = currIdx / this->strides[d];
+			currIdx %= this->strides[d];
+		}
 
-	    // For each dimension, check the line containing this cell
+		// For each dimension, check the line containing this cell
 		for (int dim = 0; dim < this->numberDimensions; ++dim) {
-	        vector<int> idx = coords; // cords[dim] is variable
-	        struct LineDef def = {dim, idx};
-	        if (!lineChecker(def)) {
-	            return false; // line unsolvable
-	        }
-	    }
+			vector<int> idx = coords; // cords[dim] is variable
+			struct LineDef def = {dim, idx};
+			if (!lineChecker(def)) {
+				return false; // line unsolvable
+			}
+		}
 
-	    return true;
+		return true;
 	}
 
 public:
@@ -777,12 +744,18 @@ public:
 				currIdx = distribution(generator);
 				this->data[currIdx] = Color::Black;
 
+
+				totalPlaced += 1.0;
+				currCover = totalPlaced / floatTotal;
+
+				/*
 				if (checkCellConsistency(currIdx)) {
 					totalPlaced += 1.0;
 					currCover = totalPlaced / floatTotal;
 				} else {
 					this->data[currIdx] = Color::White;
 				}
+				*/
 
 			}
 			this->buildHintStrides();
@@ -834,15 +807,102 @@ public:
 	}
 
 	
-	// User input
+	//  -------------------------------------- User input ----------------------------------------
+
+
+	void setUpForPlaying() {
+		this->recomendationMap.clear();
+		this->dimsSolvability = vector<int>(this->numberDimensions, 0);
+
+		for (int dim = 0; dim < this->numberDimensions; dim++) {
+			// All possible permutation for this dimension
+			auto tuples = generateLineIndexTuples(dim);
+
+			for (auto& coords : tuples) {
+				LineDef def = {dim, coords};
+				bool mody = this->lineCanBeModified(def);
+				float heuristic = this->getHeuristic(def, mody);
+				recomendationMap.insertOrUpdate(heuristic, mody, def);
+				if (mody) this->dimsSolvability[dim]++;
+			}
+		}
+
+	}
+
+	// {free_dim1, free_dim2}, idx 
+	std::pair<std::pair<int, int>, std::vector<int>> getNextSolvableDimensions() {
+		int max1 = distance(this->dimsSolvability.begin(), min_element(this->dimsSolvability.begin(), this->dimsSolvability.end()));
+		int max2 = max1;
+
+		for (int i = 0; i < this->numberDimensions; ++i) {
+			if(this->dimsSolvability[max1] <= this->dimsSolvability[i]) {
+				max2 = max1;
+				max1 = i;
+			}
+		}
+		const Item& mostSolvable = this->recomendationMap.bestForDim(max1);
+
+		return {{max1, max2}, {get<0>(mostSolvable).idx}};
+	}
+
+	vector<vector<int>> getBoardData(std::pair<std::pair<int, int>, std::vector<int>> boardDef) {
+		int dimX = boardDef.first.first;
+		int dimY = boardDef.first.second;
+		vector<int> idx = boardDef.second;
+
+		if (dimX == dimY) throw std::invalid_argument("dimX and dimY must be different");
+		if (dimX >= this->numberDimensions || dimY >= this->numberDimensions)
+				throw std::invalid_argument("invalid dimensions");
+
+		int sizeX = this->dimensionsSize[dimX];
+		int sizeY = this->dimensionsSize[dimY];
+
+		vector<vector<int>> board(sizeY, vector<int>(sizeX, -1));
+		for (int y = 0; y < sizeY; y++) {
+			for (int x = 0; x < sizeX; x++) {
+				// Build a full index vector for this point
+				vector<int> fullIdx = idx;
+				fullIdx[dimX] = x;
+				fullIdx[dimY] = y;
+
+				// Flatten index
+				int flat = 0;
+				for (int d = 0; d < this->numberDimensions; d++) {
+					flat += fullIdx[d] * this->strides[d];
+				}
+
+				board[y][x] = static_cast<int>(this->unsolvedData[flat]);
+			}
+		}
+
+		return board;
+	}
+
+
+
 	// We use this->unsolvedData to save them
 	bool paintCell(vector<int> cellIdx, Color color) {
 		if (cellIdx.size() != this->numberDimensions) return false;
 		// obtain data id
 		int idx = getCellId(cellIdx);
+
 		if (this->unsolvedData[idx] != Color::Black && color == Color::Black) this->painted_squares++;
 		else if (this->unsolvedData[idx] == Color::Black && color != Color::Black) this->painted_squares--;
 		this->unsolvedData[idx] = color;
+
+		// Update the solvability for all dimensions
+		for (int d2 = 0; d2 < this->numberDimensions; d2++) {
+			struct LineDef newLine = {d2, cellIdx};
+			int isSolvable = this->lineCanBeModified(newLine);
+			float heuristic = this->getHeuristic(newLine, isSolvable);
+			int oldSolvability = this->recomendationMap.getSolvability(newLine);
+			//cout << "Old Solv: " << isSolvable << " " << oldSolvability << endl;
+
+			this->dimsSolvability[d2] += isSolvable - oldSolvability; // 1->now yes, -1 -> now no
+			this->recomendationMap.insertOrUpdate(heuristic, isSolvable, newLine);
+		}
+
+
 		return this->painted_squares == this->total_squares;
 	}
 /*
@@ -906,15 +966,15 @@ public:
 		int run = 0;
 		int start = -1;
 		for (int i = 0; i < line.size(); i++) {
-		    if (line[i] == Color::Black) {
-		    	if (run == 0) start = i;
-		        run++;
-		    } else {
-		        if (run > 0) {
-		            blackBlocks.push_back({start, run});
-		            run = 0;
-		        }
-		    }
+			if (line[i] == Color::Black) {
+				if (run == 0) start = i;
+				run++;
+			} else {
+				if (run > 0) {
+					blackBlocks.push_back({start, run});
+					run = 0;
+				}
+			}
 		}
 		if (run > 0) blackBlocks.push_back({start, run});
 
@@ -1009,7 +1069,7 @@ public:
 		return states;
 	}
 
-	// Only called when there's the same number of painted squares
+	// Should only be called when there's the same number of painted squares
 	bool userSolvedIt() {
 		for (int i = 0; i < this->data.size(); i++) {
 			if (this->unsolvedData[i] != Color::Black) continue;
@@ -1021,7 +1081,6 @@ public:
 	vector<vector<int>> getHintsdim(int dim) {
 		return this->hints[dim];
 	}
-
 
 };
 
