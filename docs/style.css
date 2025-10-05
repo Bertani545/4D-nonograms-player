@@ -113,14 +113,17 @@
 	  top: 10px;         /* distance from top */
 	  right: 10px;       /* distance from right */
 	  display: flex;     /* put buttons side by side */
+	  flex-direction: column;
 	  gap: 8px;  /* spacing between buttons */
+
 	}
 
-	.top-right button {
+	.button-opt button {
 	  padding: 6px 12px;
 	  border: 1px solid #333;
 	  background: white;
 	  cursor: pointer;
+	  font-size: 1.5rem;
 	}
 }
 
@@ -134,10 +137,11 @@
 	  gap: 8px;  /* spacing between buttons */
 	}
 
-	.top-right button {
+	.button-opt button {
 	  padding: 6px 12px;
 	  border: 1px solid #333;
 	  background: white;
 	  cursor: pointer;
+	  font-size: 1.5rem;
 	}
 }
