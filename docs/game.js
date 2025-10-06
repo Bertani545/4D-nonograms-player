@@ -1,19 +1,5 @@
 import createModule from './nonogram/main.js'
 
-const ln = [[3,3],[2,1,3], [1,2,3], [1,1,1],[3,1,1],[3,1,1],[5,1],[2,2,2],[2,1],[2,1]];
-const tn = [[1,1,1],[1,5],[4,2,2],[1,1,1,1],[1,1,2],[1,6],[1],[6,1],[3,2],[2,2]];
-const data = [0,0,1,1,1,0,0,1,1,1,
-			  0,1,1,0,0,1,0,1,1,1,
-			  1,0,1,1,0,0,1,1,1,0,
-			  0,0,1,0,0,0,0,1,0,1,
-			  0,0,0,1,1,1,0,1,0,1,
-			  1,1,1,0,0,1,0,1,0,0,
-			  0,1,1,1,1,1,0,0,1,0,
-			  1,1,0,0,1,1,0,1,1,0,
-			  0,1,1,0,0,1,0,0,0,0,
-			  0,1,1,0,0,1,0,0,0,0];
-
-
 let NonogramModule;
 let boardData;
 let dimSizes;
@@ -25,6 +11,7 @@ function makeNumbersTop(element, nDivs, nNumbers) {
 	for (let i = 0; i < nDivs; i++) {
 		const division = document.createElement("div");
 		division.className = "numbers-container";
+		division.classList.add("top-container");
 
 		let size = 100 / nDivs;
 		division.style.height = "100%"; 
@@ -50,6 +37,7 @@ function makeNumbersLeft(element, nDivs, nNumbers) {
 	for (let i = 0; i < nDivs; i++) {
 		const division = document.createElement("div");
 		division.className = "numbers-container";
+		division.classList.add("left-container");
 
 		let size = 100 / nDivs;
 		division.style.height = size + "%"; 
@@ -237,7 +225,7 @@ function buildBoard(place, x, y, data) {
 	function checkOrientation() {
 		const container = document.getElementsByClassName('game-container')[0];
 		if (window.innerWidth > window.innerHeight) {
-		    const numberSize = 5;
+		    const numberSize = 6;
 		    const blocksize = 6;
 
 		    container.style.height = blocksize * dims[dimsUsed[1]] + numberSize + "dvh";
@@ -249,7 +237,7 @@ function buildBoard(place, x, y, data) {
 
 		} else {
 			console.log("Portrait")
-			const numberSize = 5;
+			const numberSize = 6;
 			const blocksize = 6;
 
 		    container.style.width = blocksize * dims[dimsUsed[0]] + numberSize + "dvw";
