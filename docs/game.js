@@ -59,7 +59,7 @@ function makeNumbersLeft(element, nDivs, nNumbers) {
 function buildGrid(container, x, y, data) {
 	for (let i = 0; i < x; i++) {
 		for (let j = 0; j < y; j++) {
-			const btn = document.createElement("button");
+			const btn = document.createElement("div");
 			btn.className = "cell"
 			btn.dataset.state = -1; // start at -1
 			btn.addEventListener('pointerdown', (e) => {
@@ -98,8 +98,7 @@ function buildGrid(container, x, y, data) {
 			container.appendChild(btn);
 		}
 		
-		container.style.gridTemplateColumns = "repeat(" + y + ", 1fr)";
-		container.style.gridTemplateRows = "repeat(" + x + ", 1fr)";
+		
 
 	}
 }
@@ -173,6 +172,7 @@ function updateBoard(r, c, color) {
 				numbers.classList.remove('modifiable');
 			}
 		}
+
 		let i = 0;
 		for (let num of numbers.children) {
 			if (num.innerHTML == "") continue;
@@ -216,46 +216,106 @@ function handleTap(self, r, c) {
 }
 
 
+function addDimsName(area) {
+
+	const before = document.getElementsByClassName('dim-displayer')[0];
+	if (before != undefined) {
+		before.parentNode.removeChild(before);
+	}
+
+	const dimsNames = ["x", "y", "z", "w"];
+
+	const container =  document.createElement("div");
+	container.className = "dim-displayer";
+	area.appendChild(container);
+
+
+	const dim1 = document.createElement("div");
+	const dim2 = document.createElement("div");
+	dim1.innerHTML = dimsNames[dimsUsed[0]];
+	dim1.className = "dim-number";
+	dim2.innerHTML = dimsNames[dimsUsed[1]];
+	dim2.className = "dim-number";
+	
+	
+	// Obtain incenter of two sides of the square
+	// top left corner is 0,0
+	const size = container.getBoundingClientRect()
+	const x = size.width;
+	const y = size.height;
+	const diag = Math.sqrt(x*x+y*y);
+	const s = x + y + diag;
+
+	const p0 = [0,0];
+	const p1 = [0, y];
+	const p2 = [x,y];
+	const p3 = [x, 0];
+
+	//const bar1 = [(p0[0] + p1[0] + p2[0])/3, (p0[1] + p1[1] + p2[1])/3];
+	//const bar2 = [(p0[0] + p3[0] + p2[0])/3, (p0[1] + p3[1] + p2[1])/3];
+	const in1 = [
+		(y * p0[0] + diag * p1[0] + x * p2[0]) / s,
+		(y * p0[1] + diag * p1[1] + x * p2[1]) / s
+	];
+	const in2 = [
+		(y * p0[0] + diag * p3[0] + x * p2[0]) / s,
+		(y * p0[1] + diag * p3[1] + x * p2[1]) / s
+	];
+
+	container.appendChild(dim1);
+	container.appendChild(dim2);
+	dim2.style.setProperty("--number-trans", in1[0] + "px, " + in1[1] + "px")
+	dim1.style.setProperty("--number-trans", in2[0] + "px, " + in2[1] + "px")
+
+	
+
+	
+	// Calculus for position of the diagona
+	const angle = Math.atan(-x/y);
+
+	const line = document.createElement("div");
+	line.className = "dim-displayer-line";
+	line.style.height  = 1.1 * diag + 'px';
+	line.style.setProperty("--line-angle", angle + "rad");
+
+	container.appendChild(line);
+}
+
+
+function displayDimIDs(area) {
+	const before = document.getElementsByClassName('dimID-displayer')[0];
+	if (before != undefined) {
+		before.parentNode.removeChild(before);
+	}
+
+	const container =  document.createElement("div");
+	container.className = "dimID-displayer";
+	
+	const dimsNames = ["x", "y", "z", "w"];
+	let text = "At ";
+	for (let i = 0;  i < dims.length; i++) {
+		if (!dimsUsed.includes(i)) {
+			text += dimsNames[i] + ": " + currIdx.get(i) + ", ";
+		}
+	}
+	//dims only contains relevant information for dims not used for the board
+
+	container.innerHTML = text.slice(0, -2);
+	
+
+	area.appendChild(container);
+
+
+}
+
+
 function buildBoard(place, x, y, data) {
 	const container =  document.createElement("div");
 	container.className = "game-container";
-
-
-
-	function checkOrientation() {
-		const container = document.getElementsByClassName('game-container')[0];
-		if (window.innerWidth > window.innerHeight) {
-		    const numberSize = 6;
-		    const blocksize = 6;
-
-		    container.style.height = blocksize * dims[dimsUsed[1]] + numberSize + "dvh";
-		    container.style.width = blocksize * dims[dimsUsed[0]] + numberSize + "dvh";
-		    
-
-		    container.style.gridTemplateRows = numberSize  * Math.ceil(dims[dimsUsed[1]]/2) + "dvh " + blocksize * dims[dimsUsed[1]] + "dvh";
-			container.style.gridTemplateColumns = numberSize  * Math.ceil(dims[dimsUsed[0]]/2) + "dvh " + blocksize * dims[dimsUsed[0]] + "dvh";
-
-		} else {
-			console.log("Portrait")
-			const numberSize = 6;
-			const blocksize = 6;
-
-		    container.style.width = blocksize * dims[dimsUsed[0]] + numberSize + "dvw";
-		    container.style.height = blocksize * dims[dimsUsed[1]] + numberSize + "dvw";
-		    
-
-		    container.style.gridTemplateRows =  numberSize  * Math.ceil(dims[dimsUsed[1]]/2)  + "dvw " + blocksize * dims[dimsUsed[1]] + "dvw";
-			container.style.gridTemplateColumns = numberSize  * Math.ceil(dims[dimsUsed[0]]/2) + "dvw " + blocksize * dims[dimsUsed[0]] + "dvw";
-		}
-	}
-
-
-	// Detect changes on resize
-	window.addEventListener('resize', checkOrientation);
 	
 
 	place.appendChild(container);
-	checkOrientation();
+	
 
 	const numbersTop = document.createElement("div");
 	numbersTop.className = "top-numbers";
@@ -273,6 +333,47 @@ function buildBoard(place, x, y, data) {
 	container.appendChild(numbersTop);
 	container.appendChild(numbersLeft);
 	container.appendChild(board);
+
+
+
+	function checkOrientation() {
+		const container = document.getElementsByClassName('game-container')[0];
+		const board = document.getElementsByClassName('board')[0];
+		if (window.innerWidth > window.innerHeight) {
+		    const numberSize = 6;
+		    const blocksize = 6;
+
+		    container.style.height = blocksize * dims[dimsUsed[1]] + numberSize + "dvh";
+		    container.style.width = blocksize * dims[dimsUsed[0]] + numberSize + "dvh";
+		    
+
+		    container.style.gridTemplateRows = numberSize  * Math.ceil(dims[dimsUsed[1]]/2) + "dvh " + blocksize * dims[dimsUsed[1]] + "dvh";
+			container.style.gridTemplateColumns = numberSize  * Math.ceil(dims[dimsUsed[0]]/2) + "dvh " + blocksize * dims[dimsUsed[0]] + "dvh";
+			
+			board.style.gridTemplateColumns = "repeat(" + dims[dimsUsed[0]] + ", " + blocksize + "dvh)";
+			board.style.gridTemplateRows = "repeat(" + dims[dimsUsed[1]] + ", " + blocksize + "dvh)";
+		} else {
+			console.log("Portrait")
+			const numberSize = 6;
+			const blocksize = 6;
+
+		    container.style.width = blocksize * dims[dimsUsed[0]] + numberSize + "dvw";
+		    container.style.height = blocksize * dims[dimsUsed[1]] + numberSize + "dvw";
+		    
+
+		    container.style.gridTemplateRows =  numberSize  * Math.ceil(dims[dimsUsed[1]]/2)  + "dvw " + blocksize * dims[dimsUsed[1]] + "dvw";
+			container.style.gridTemplateColumns = numberSize  * Math.ceil(dims[dimsUsed[0]]/2) + "dvw " + blocksize * dims[dimsUsed[0]] + "dvw";
+		
+			board.style.gridTemplateColumns = "repeat(" + dims[dimsUsed[0]] + ", " + blocksize + "dvw)";
+			board.style.gridTemplateRows = "repeat(" + dims[dimsUsed[1]] + ", " + blocksize + "dvw)";
+		}
+		addDimsName(container);
+		displayDimIDs(container);
+	}
+	checkOrientation();
+
+	// Detect changes on resize
+	window.addEventListener('resize', checkOrientation);
 
 
 	return {
@@ -311,7 +412,6 @@ function placeNumbers(section, solveDim, movingDim, idx) {
 
 
 
-
 function main() {
 
 	dims = JSON.parse(sessionStorage.getItem("dims"));
@@ -319,7 +419,7 @@ function main() {
 		window.location.href = "index.html";
 	}
 	dims = dims.filter((x) => {return x >= 2})
-	console.log(dims)
+	//console.log(dims)
 	if(dims.length < 2) {
 		console.log("Wrong input")
 		return;
@@ -338,7 +438,7 @@ function main() {
 	const changeButton = document.getElementById("change-play-area");
 	changeButton.addEventListener("click", (e) => {
 		const bestBoard = NonogramModule.getBestBoard();
-		console.log(bestBoard)
+		//console.log(bestBoard)
 		const def = bestBoard[0];
 		const idx = def[1];
 		const boardDims = def[0];
@@ -346,6 +446,8 @@ function main() {
 
 		dimsUsed = def[0];
 		currIdx = def[1];
+
+
 
 		// Build it
 		boardArea.innerHTML = "";
@@ -428,6 +530,7 @@ function main() {
 					j++;
 				}
 			}
+
 	});
 	changeButton.click();
 	//console.log(":)")

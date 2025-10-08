@@ -2,10 +2,45 @@
 
 .game-container {
 	display: grid;
-	grid-template-rows: 30% 70%;
-	grid-template-columns: 30% 70%;
 
 }
+
+.dim-displayer {
+	grid-row: 1;
+	grid-column: 1;
+	position: relative;
+	overflow: hidden;
+}
+
+.dim-displayer-line {
+	position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  background: #000;
+  transform-origin: center center;
+  pointer-events: none; /* don't block clicks */
+  /*translate: -50% -50%;*/
+  opacity: 1;
+  z-index: 2;
+
+}
+.dim-displayer-line { transform: translate(-50%, -50%) rotate(var(--line-angle)); }
+
+
+.dim-number {
+	position: absolute;
+	font-size: min(4dvh, 4dvw);
+	font-weight: bold;
+	translate: -50% -50%;
+	transform: translate(var(--number-trans));
+}
+
+
+
+
+
+
 
 .top-numbers {
 	grid-row: 1;
@@ -121,6 +156,10 @@
 	position: relative;
 }
 
+.dimID-displayer {
+		width: 200px;
+	}
+
 @media (orientation: landscape){
 
 	.button-opt {
@@ -140,6 +179,10 @@
 	  cursor: pointer;
 	  font-size: 1.5rem;
 	}
+
+	.dimID-displayer {
+		font-size: 4dvh;
+	}
 }
 
 @media (orientation: portrait){
@@ -158,5 +201,9 @@
 	  background: white;
 	  cursor: pointer;
 	  font-size: 1.5rem;
+	}
+
+	.dimID-displayer {
+		font-size: 4dvw;
 	}
 }
