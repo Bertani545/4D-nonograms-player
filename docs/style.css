@@ -157,7 +157,7 @@
 }
 
 .dimID-displayer {
-		width: 200px;
+		width: 100dvw;
 	}
 
 @media (orientation: landscape){
